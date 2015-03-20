@@ -30,16 +30,23 @@ function printSlowTrees(graph, factor) {
     }
 
     for (var i = 0; i < groupedSortedTrees.length; i++) {
-      var group = groupedSortedTrees[i]
+      var group = groupedSortedTrees[i],
+          averageStr
 
       if (group.totalSelfTime > minimumTime) {
-        cumulativeLogLines.push(pad(group.name + ' (' + group.nodes.length + ')', MAX_NAME_LENGTH) + ' | ' + pad(Math.floor(group.totalSelfTime / 1e6) + 'ms', MAX_VALUE_LENGTH))
+        if (group.nodes.length > 1) {
+          averageStr = ' (' + Math.floor(group.averageSelfTime / 1e6) + ' ms)';
+        } else {
+          averageStr = '';
+        }
+
+        cumulativeLogLines.push(pad(group.name + ' (' + group.nodes.length + ')', MAX_NAME_LENGTH) + ' | ' + pad(Math.floor(group.totalSelfTime / 1e6) + 'ms' + averageStr, MAX_VALUE_LENGTH))
       }
     }
 
     if (cumulativeLogLines.length > 0) {
       cumulativeLogLines.unshift(pad('', MAX_NAME_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_LENGTH, '-'))
-      cumulativeLogLines.unshift(pad('Slowest Trees (cumulative)', MAX_NAME_LENGTH) + ' | ' + pad('Total', MAX_VALUE_LENGTH))
+      cumulativeLogLines.unshift(pad('Slowest Trees (cumulative)', MAX_NAME_LENGTH) + ' | ' + pad('Total (avg)', MAX_VALUE_LENGTH))
       cumulativeLogLines.unshift('\n')
     }
 
@@ -65,7 +72,8 @@ function sortResults(graph) {
       treesGroupedByName[name] = {
         name: name,
         nodes: [],
-        totalSelfTime: undefined // to calculate
+        totalSelfTime: undefined, // to calculate
+        averageSelfTime: undefined // to calculate
       }
     }
     treesGroupedByName[name].nodes.push(node)
@@ -90,6 +98,8 @@ function sortResults(graph) {
     group.totalSelfTime = group.nodes.reduce(function(sum, node) {
       return sum + node.selfTime
     }, 0);
+
+    group.averageSelfTime = group.totalSelfTime / group.nodes.length;
 
     groupedTrees.push(group);
   }
