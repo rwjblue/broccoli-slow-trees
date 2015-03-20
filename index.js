@@ -102,6 +102,8 @@ function sortResults(graph) {
     return b.selfTime - a.selfTime
   })
 
+  var numTreesThatAreUsedMoreThanOnce = 0;
+
 
   for (var groupName in treesGroupedByName) {
     var group = treesGroupedByName[groupName];
@@ -113,15 +115,25 @@ function sortResults(graph) {
     group.averageSelfTime = group.totalSelfTime / group.nodes.length;
 
     groupedTrees.push(group);
+
+    if (group.nodes.length > 1) {
+      numTreesThatAreUsedMoreThanOnce += 1;
+    }
   }
 
   var flatSortedTrees = flattenedTrees.sort(function(a, b) {
     return b.selfTime - a.selfTime
   })
 
-  var groupedSortedTrees = groupedTrees.sort(function(a, b) {
-    return b.totalSelfTime - a.totalSelfTime
-  })
+  var groupedSortedTrees = [];
+
+  // Only return/show the grouped/cumaltive results if there are some trees used
+  // more than once.
+  if (numTreesThatAreUsedMoreThanOnce > 0) {
+    groupedSortedTrees = groupedTrees.sort(function(a, b) {
+      return b.totalSelfTime - a.totalSelfTime
+    })
+  }
 
   return {
     flatSortedTrees: flattenedTrees,
