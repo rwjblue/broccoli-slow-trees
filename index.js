@@ -2,6 +2,14 @@ function nameFromTreeNode(node) {
   return node.tree.description || node.tree.constructor.name;
 }
 
+function ellipsize(string, desiredLength) {
+  if (string.length > desiredLength) {
+    return string.slice(0, desiredLength - 3) + '...';
+  } else {
+    return string;
+  }
+}
+
 function printSlowTrees(graph, factor) {
   try {
     var allSortResults = sortResults(graph)
@@ -12,21 +20,21 @@ function printSlowTrees(graph, factor) {
     var logLines = [],
         cumulativeLogLines = [];
 
-    var MAX_NAME_LENGTH = 45,
-        MAX_VALUE_LENGTH = 20;
+    var MAX_NAME_CELL_LENGTH = 45,
+        MAX_VALUE_CELL_LENGTH = 20;
 
     for (var i = 0; i < flatSortedTrees.length; i++) {
       var node = flatSortedTrees[i]
       var name = nameFromTreeNode(node)
 
       if (node.selfTime > minimumTime) {
-        logLines.push(pad(name, MAX_NAME_LENGTH) + ' | ' + pad(Math.floor(node.selfTime / 1e6) + 'ms', MAX_VALUE_LENGTH))
+        logLines.push(pad(ellipsize(name, MAX_NAME_CELL_LENGTH), MAX_NAME_CELL_LENGTH) + ' | ' + pad(Math.floor(node.selfTime / 1e6) + 'ms', MAX_VALUE_CELL_LENGTH))
       }
     }
 
     if (logLines.length > 0) {
-      logLines.unshift(pad('', MAX_NAME_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_LENGTH, '-'))
-      logLines.unshift(pad('Slowest Trees', MAX_NAME_LENGTH) + ' | ' + pad('Total', MAX_VALUE_LENGTH))
+      logLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'))
+      logLines.unshift(pad('Slowest Trees', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total', MAX_VALUE_CELL_LENGTH))
     }
 
     for (var i = 0; i < groupedSortedTrees.length; i++) {
@@ -40,20 +48,23 @@ function printSlowTrees(graph, factor) {
           averageStr = '';
         }
 
-        cumulativeLogLines.push(pad(group.name + ' (' + group.nodes.length + ')', MAX_NAME_LENGTH) + ' | ' + pad(Math.floor(group.totalSelfTime / 1e6) + 'ms' + averageStr, MAX_VALUE_LENGTH))
+        var countStr = ' (' + group.nodes.length + ')'
+        var nameStr = ellipsize(group.name, MAX_NAME_CELL_LENGTH - countStr.length)
+
+        cumulativeLogLines.push(pad(nameStr + countStr, MAX_NAME_CELL_LENGTH) + ' | ' + pad(Math.floor(group.totalSelfTime / 1e6) + 'ms' + averageStr, MAX_VALUE_CELL_LENGTH))
       }
     }
 
     if (cumulativeLogLines.length > 0) {
-      cumulativeLogLines.unshift(pad('', MAX_NAME_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_LENGTH, '-'))
-      cumulativeLogLines.unshift(pad('Slowest Trees (cumulative)', MAX_NAME_LENGTH) + ' | ' + pad('Total (avg)', MAX_VALUE_LENGTH))
+      cumulativeLogLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'))
+      cumulativeLogLines.unshift(pad('Slowest Trees (cumulative)', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total (avg)', MAX_VALUE_CELL_LENGTH))
       cumulativeLogLines.unshift('\n')
     }
 
     console.log('\n' + logLines.join('\n') + cumulativeLogLines.join('\n') + '\n')
   } catch (e) {
-    console.error(e);
-    throw e;
+    console.error('Error when printing slow trees:', e);
+    console.error(e.stack)
   }
 }
 
