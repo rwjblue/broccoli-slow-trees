@@ -12,8 +12,8 @@ function printSlowTrees(graph, factor) {
     var logLines = [],
         cumulativeLogLines = [];
 
-    var MAX_NAME_LENGTH = 30,
-        MAX_VALUE_LENGTH = 15;
+    var MAX_NAME_LENGTH = 45,
+        MAX_VALUE_LENGTH = 20;
 
     for (var i = 0; i < flatSortedTrees.length; i++) {
       var node = flatSortedTrees[i]
