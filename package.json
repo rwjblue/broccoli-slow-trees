@@ -1,6 +1,6 @@
 {
   "name": "broccoli-slow-trees",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Print out of slowest trees for Broccoli.",
   "main": "index.js",
   "scripts": {
@@ -18,5 +18,18 @@
   "bugs": {
     "url": "https://github.com/rwjblue/broccoli-slow-trees/issues"
   },
-  "homepage": "https://github.com/rwjblue/broccoli-slow-trees"
+  "homepage": "https://github.com/rwjblue/broccoli-slow-trees",
+  "scripts": {
+    "test": "mocha tests/",
+    "test:debug": "mocha --no-timeouts debug tests/"
+  },
+  "dependencies": {
+    "heimdalljs": "^0.1.0"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "chai-as-promised": "^5.1.0",
+    "chai-files": "^1.2.0",
+    "mocha": "^2.5.3"
+  }
 }
