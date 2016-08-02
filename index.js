@@ -1,3 +1,5 @@
+var calculateSummary = require('./calculate-summary');
+
 function ellipsize(string, desiredLength) {
   if (string.length > desiredLength) {
     return string.slice(0, desiredLength - 3) + '...';
@@ -6,55 +8,44 @@ function ellipsize(string, desiredLength) {
   }
 }
 
-function printSlowNodes(nodeWrapper, factor) {
+module.exports = function printSlowNodes(tree, factor) {
   try {
-    var allSortResults = sortResults(nodeWrapper)
-    var flatSortedNodes = allSortResults.flatSortedNodes
-    var groupedSortedNodes = allSortResults.groupedSortedNodes
+    var summary = calculateSummary(tree);
+    var pcThreshold = factor || 0.05;
+    var msThreshold = pcThreshold * summary.totalTime;
+    var logLines = [];
+    var cumulativeLogLines = [];
 
-    var minimumTime = nodeWrapper.buildState.totalTime * (factor || 0.05)
-    var logLines = [],
-        cumulativeLogLines = [];
+    var MAX_NAME_CELL_LENGTH = 45;
+    var MAX_VALUE_CELL_LENGTH = 20;
 
-    var MAX_NAME_CELL_LENGTH = 45,
-        MAX_VALUE_CELL_LENGTH = 20;
-
-    for (var i = 0; i < flatSortedNodes.length; i++) {
-      var nw = flatSortedNodes[i]
-
-      if (nw.buildState.selfTime > minimumTime) {
-        logLines.push(pad(ellipsize(nw.label, MAX_NAME_CELL_LENGTH), MAX_NAME_CELL_LENGTH) + ' | ' + pad(Math.floor(nw.buildState.selfTime) + 'ms', MAX_VALUE_CELL_LENGTH))
-      }
-    }
 
     if (logLines.length > 0) {
-      logLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'))
-      logLines.unshift(pad('Slowest Nodes', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total', MAX_VALUE_CELL_LENGTH))
+      logLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'));
+      logLines.unshift(pad('Slowest Nodes', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total', MAX_VALUE_CELL_LENGTH));
     }
 
-    for (var i = 0; i < groupedSortedNodes.length; i++) {
-      var group = groupedSortedNodes[i],
-          averageStr
+    for (var i = 0; i < summary.groupedNodes.length; i++) {
+      var group = summary.groupedNodes[i];
+      var averageStr;
 
-      if (group.totalSelfTime > minimumTime) {
-        if (group.nodeWrappers.length > 1) {
+      if (group.totalSelfTime > msThreshold) {
+        if (group.count > 1) {
           averageStr = ' (' + Math.floor(group.averageSelfTime) + ' ms)';
         } else {
           averageStr = '';
         }
 
-        var countStr = ' (' + group.nodeWrappers.length + ')'
+        var countStr = ' (' + group.count + ')'
         var nameStr = ellipsize(group.name, MAX_NAME_CELL_LENGTH - countStr.length)
 
         cumulativeLogLines.push(pad(nameStr + countStr, MAX_NAME_CELL_LENGTH) + ' | ' + pad(Math.floor(group.totalSelfTime) + 'ms' + averageStr, MAX_VALUE_CELL_LENGTH))
       }
     }
 
-    if (cumulativeLogLines.length > 0) {
-      cumulativeLogLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'))
-      cumulativeLogLines.unshift(pad('Slowest Nodes (cumulative)', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total (avg)', MAX_VALUE_CELL_LENGTH))
-      cumulativeLogLines.unshift('\n')
-    }
+    cumulativeLogLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'))
+    cumulativeLogLines.unshift(pad('Slowest Nodes (totalTime => ' + (pcThreshold * 100) +'% )', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total (avg)', MAX_VALUE_CELL_LENGTH))
+    cumulativeLogLines.unshift('\n')
 
     console.log('\n' + logLines.join('\n') + cumulativeLogLines.join('\n') + '\n')
   } catch (e) {
@@ -63,76 +54,6 @@ function printSlowNodes(nodeWrapper, factor) {
   }
 }
 
-function sortResults(nodeWrapper) {
-  var flattenedNodes = []
-  var nodesGroupedByName = Object.create(null)
-  var groupedNodes = [];
-
-  function process(nw) {
-    if (flattenedNodes.indexOf(nw) > -1) { return } // for de-duping
-
-    flattenedNodes.push(nw)
-
-    if (nodesGroupedByName[nw.label] == null) {
-      nodesGroupedByName[nw.label] = {
-        name: nw.label,
-        nodeWrappers: [],
-        totalSelfTime: undefined, // to calculate
-        averageSelfTime: undefined // to calculate
-      }
-    }
-    nodesGroupedByName[nw.label].nodeWrappers.push(nw)
-
-    var length = nw.inputNodeWrappers.length
-    for (var i = 0; i < length; i++) {
-      process(nw.inputNodeWrappers[i])
-    }
-  }
-
-  process(nodeWrapper) // kick off with the top item
-
-  var flatSortedNodes = flattenedNodes.sort(function(a, b) {
-    return b.buildState.selfTime - a.buildState.selfTime
-  })
-
-  var numNodesThatAreUsedMoreThanOnce = 0;
-
-
-  for (var groupName in nodesGroupedByName) {
-    var group = nodesGroupedByName[groupName];
-
-    group.totalSelfTime = group.nodeWrappers.reduce(function(sum, nw) {
-      return sum + nw.buildState.selfTime
-    }, 0);
-
-    group.averageSelfTime = group.totalSelfTime / group.nodeWrappers.length;
-
-    groupedNodes.push(group);
-
-    if (group.nodeWrappers.length > 1) {
-      numNodesThatAreUsedMoreThanOnce += 1;
-    }
-  }
-
-  var flatSortedNodes = flattenedNodes.sort(function(a, b) {
-    return b.selfTime - a.selfTime
-  })
-
-  var groupedSortedNodes = [];
-
-  // Only return/show the grouped/cumulative results if there are some nodes used
-  // more than once.
-  if (numNodesThatAreUsedMoreThanOnce > 0) {
-    groupedSortedNodes = groupedNodes.sort(function(a, b) {
-      return b.totalSelfTime - a.totalSelfTime
-    })
-  }
-
-  return {
-    flatSortedNodes: flattenedNodes,
-    groupedSortedNodes: groupedSortedNodes
-  }
-}
 
 function pad(str, len, char, dir) {
   if (!char) { char = ' '}
@@ -157,4 +78,3 @@ function pad(str, len, char, dir) {
   return str
 }
 
-module.exports = printSlowNodes
