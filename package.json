@@ -4,7 +4,8 @@
   "description": "Print out of slowest trees for Broccoli.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha tests",
+    "test:debug": "mocha --no-timeout debug tests"
   },
   "keywords": [
     "broccoli"
@@ -24,7 +25,7 @@
     "test:debug": "mocha --no-timeouts debug tests/"
   },
   "dependencies": {
-    "heimdalljs": "^0.1.0"
+    "heimdalljs": "^0.2.1"
   },
   "devDependencies": {
     "chai": "^3.5.0",
