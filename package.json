@@ -20,10 +20,6 @@
     "url": "https://github.com/rwjblue/broccoli-slow-trees/issues"
   },
   "homepage": "https://github.com/rwjblue/broccoli-slow-trees",
-  "scripts": {
-    "test": "mocha tests/",
-    "test:debug": "mocha --no-timeouts debug tests/"
-  },
   "dependencies": {
     "heimdalljs": "^0.2.1"
   },
