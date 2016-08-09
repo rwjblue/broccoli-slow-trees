@@ -25,15 +25,14 @@ function calculateSummary(tree) {
 
   // calculate times
   tree.visitPostOrder(function (node) {
-    var nonbroccoliChildrenTime = node.children.reduce(function (acc, childNode) {
+    var nonbroccoliChildrenTime = 0;
+    node.forEachChild(function (childNode) {
       // subsume non-broccoli nodes as their ancestor broccoli nodes'
       // broccoliSelfTime
-      if (childNode.id.broccoliNode) {
-        return acc;
-      } else {
-        return acc + childNode._slowTrees.broccoliSelfTime;
+      if (!childNode.id.broccoliNode) {
+        nonbroccoliChildrenTime += childNode._slowTrees.broccoliSelfTime;
       }
-    }, 0);
+    });
 
     var time = nonbroccoliChildrenTime + node.stats.time.self;
 
