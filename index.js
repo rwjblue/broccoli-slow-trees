@@ -13,17 +13,11 @@ module.exports = function printSlowNodes(tree, factor) {
     var summary = calculateSummary(tree);
     var pcThreshold = factor || 0.05;
     var msThreshold = pcThreshold * summary.totalTime;
-    var logLines = [];
     var cumulativeLogLines = [];
 
     var MAX_NAME_CELL_LENGTH = 45;
     var MAX_VALUE_CELL_LENGTH = 20;
 
-
-    if (logLines.length > 0) {
-      logLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'));
-      logLines.unshift(pad('Slowest Nodes', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total', MAX_VALUE_CELL_LENGTH));
-    }
 
     for (var i = 0; i < summary.groupedNodes.length; i++) {
       var group = summary.groupedNodes[i];
@@ -45,9 +39,8 @@ module.exports = function printSlowNodes(tree, factor) {
 
     cumulativeLogLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'))
     cumulativeLogLines.unshift(pad('Slowest Nodes (totalTime => ' + (pcThreshold * 100) +'% )', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total (avg)', MAX_VALUE_CELL_LENGTH))
-    cumulativeLogLines.unshift('\n')
 
-    console.log('\n' + logLines.join('\n') + cumulativeLogLines.join('\n') + '\n')
+    console.log('\n' + cumulativeLogLines.join('\n') + '\n')
   } catch (e) {
     console.error('Error when printing slow nodes:', e);
     console.error(e.stack)
