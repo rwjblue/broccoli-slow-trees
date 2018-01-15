@@ -38,7 +38,7 @@ module.exports = function printSlowNodes(tree, factor) {
     }
 
     cumulativeLogLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'))
-    cumulativeLogLines.unshift(pad('Slowest Nodes (totalTime => ' + (pcThreshold * 100) +'% )', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total (avg)', MAX_VALUE_CELL_LENGTH))
+    cumulativeLogLines.unshift(pad('Slowest Nodes (totalTime >= ' + (pcThreshold * 100) +'%)', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total (avg)', MAX_VALUE_CELL_LENGTH))
 
     console.log('\n' + cumulativeLogLines.join('\n') + '\n')
   } catch (e) {
@@ -70,4 +70,3 @@ function pad(str, len, char, dir) {
 
   return str
 }
-
