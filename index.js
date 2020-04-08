@@ -1,14 +1,24 @@
 var calculateSummary = require('./calculate-summary');
 
-function ellipsize(string, desiredLength) {
-  if (string.length > desiredLength) {
-    return string.slice(0, desiredLength - 3) + '...';
-  } else {
-    return string;
+function splitIntoLines(string, characterLimit, amountOfLines) {
+  var output = [];
+
+  while(output.length < amountOfLines) {
+    var line = string.substring(0, characterLimit);
+
+    output.push(line);
+
+    string = string.substring(characterLimit, string.length);
   }
+
+  return output;
 }
 
-module.exports = function printSlowNodes(tree, factor) {
+module.exports = function printSlowNodes(tree, factor, log) {
+  if(!log) {
+    log = console.log
+  }
+
   try {
     var summary = calculateSummary(tree);
     var pcThreshold = factor || 0.05;
@@ -31,16 +41,25 @@ module.exports = function printSlowNodes(tree, factor) {
         }
 
         var countStr = ' (' + group.count + ')'
-        var nameStr = ellipsize(group.name, MAX_NAME_CELL_LENGTH - countStr.length)
 
-        cumulativeLogLines.push(pad(nameStr + countStr, MAX_NAME_CELL_LENGTH) + ' | ' + pad(Math.floor(group.totalSelfTime) + 'ms' + averageStr, MAX_VALUE_CELL_LENGTH))
+        // we will by default have one line and the rest are the amount of lines we reqiure to overflow
+        var amountOfLines = Math.ceil((group.name.length - (MAX_NAME_CELL_LENGTH - countStr.length - '...'.length)) / MAX_NAME_CELL_LENGTH) + 1;
+        var lines = splitIntoLines(group.name, (MAX_NAME_CELL_LENGTH - countStr.length - '...'.length), amountOfLines);
+
+        lines.forEach((line, index) => {
+          if(index === 0) {
+            cumulativeLogLines.push(pad(line + (lines.length > 1 ? '...' : '') + countStr, MAX_NAME_CELL_LENGTH) + ' | ' + pad(Math.floor(group.totalSelfTime) + 'ms' + averageStr, MAX_VALUE_CELL_LENGTH))
+          } else {
+            cumulativeLogLines.push(pad('...' + line, MAX_NAME_CELL_LENGTH) + ' | ' + pad(" ", MAX_VALUE_CELL_LENGTH))
+          }
+        });
       }
     }
 
     cumulativeLogLines.unshift(pad('', MAX_NAME_CELL_LENGTH, '-') + '-+-' + pad('', MAX_VALUE_CELL_LENGTH, '-'))
     cumulativeLogLines.unshift(pad('Slowest Nodes (totalTime >= ' + (pcThreshold * 100) +'%)', MAX_NAME_CELL_LENGTH) + ' | ' + pad('Total (avg)', MAX_VALUE_CELL_LENGTH))
 
-    console.log('\n' + cumulativeLogLines.join('\n') + '\n')
+    log('\n' + cumulativeLogLines.join('\n') + '\n')
   } catch (e) {
     console.error('Error when printing slow nodes:', e);
     console.error(e.stack)

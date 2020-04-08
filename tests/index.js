@@ -1,8 +1,8 @@
+var Heimdall = require('heimdalljs/heimdall');
 var chai = require('chai'), expect = chai.expect;
 var chaiAsPromised = require('chai-as-promised');
 
-var Heimdall = require('heimdalljs/heimdall');
-var calculateSummary = require('../calculate-summary');
+var printSlowNodes = require('../index');
 
 chai.use(chaiAsPromised);
 
@@ -18,11 +18,12 @@ function restoreTime() {
   process.hrtime = originalHrtime;
 }
 
-describe('calculateSummary', function() {
+describe('printSlowNodes', function() {
   afterEach(restoreTime);
 
-  it('summarizes simple graphs', function() {
+  it('prints slow nodes for simple graphs', function() {
     stubTime(100);
+
     var heimdall = new Heimdall();
 
     return expect(heimdall.node({ name: 'babel', broccoliNode: true, }, function () {
@@ -35,89 +36,39 @@ describe('calculateSummary', function() {
         stubTime(600);
       });
     }).then(function () {
-      return calculateSummary(heimdall);
-    })).to.eventually.deep.equal({
-      totalTime: 500,
-      nodes: [
-        {
-          name: 'merge-trees',
-          selfTime: 250,
-        },
-        {
-          name: 'merge-trees',
-          selfTime: 150,
-        },
-        {
-          name: 'babel',
-          selfTime: 100,
-        }
-      ],
-      groupedNodes: [
-        {
-          name: 'merge-trees',
-          count: 2,
-          averageSelfTime: 200,
-          totalSelfTime: 400,
-        },
-        {
-          name: 'babel',
-          count: 1,
-          averageSelfTime: 100,
-          totalSelfTime: 100,
-        }
-      ],
-    });
+      var output = [];
+
+      printSlowNodes(heimdall, null, (data) => output.push(data));
+
+      return output;
+    })).to.eventually.deep.equal([
+      '\n' +
+        'Slowest Nodes (totalTime >= 5%)               | Total (avg)         \n' +
+        '----------------------------------------------+---------------------\n' +
+        'merge-trees (2)                               | 400ms (200 ms)      \n' +
+        'babel (1)                                     | 100ms               \n'
+    ]);
   });
 
-  it("counts non-broccoli nodes' time as part of their ancestor broccoli node's time", function() {
+  it('prints large node names on the next line', function() {
     stubTime(100);
+
     var heimdall = new Heimdall();
 
-    return expect(heimdall.node({ name: 'merge-trees', broccoliNode: true, }, function () {
-
-      stubTime(200);
-      return heimdall.node({ name: 'babel', broccoliNode: true }, function () {
-        stubTime(300);
-      }).then(function () {
-        return heimdall.node({ name: 'fs-tree-diff' }, function () {
-          return heimdall.node({ name: 'calculatePatch' }, function () {
-            stubTime(550);
-          }).then(function () {
-            return heimdall.node({ name: 'sortAndExpand' }, function () {
-              stubTime(600);
-            });
-          });
-        });
-      });
-
+    return expect(heimdall.node({ name: 'broccoli-persistent-filter:TemplateCompilerConcat', broccoliNode: true, }, function () {
+      stubTime(350);
     }).then(function () {
-      return calculateSummary(heimdall);
-    })).to.eventually.deep.equal({
-      totalTime: 500,
-      nodes: [
-        {
-          name: 'merge-trees',
-          selfTime: 400,
-        },
-        {
-          name: 'babel',
-          selfTime: 100,
-        }
-      ],
-      groupedNodes: [
-        {
-          averageSelfTime: 400,
-          count: 1,
-          name: "merge-trees",
-          totalSelfTime: 400,
-        },
-        {
-          averageSelfTime: 100,
-          count: 1,
-          name: "babel",
-          totalSelfTime: 100,
-        }
-      ],
-    });
+      var output = [];
+
+      printSlowNodes(heimdall, null, (data) => output.push(data));
+
+      return output;
+    })).to.eventually.deep.equal([
+      '\n' +
+        'Slowest Nodes (totalTime >= 5%)               | Total (avg)         \n' +
+        '----------------------------------------------+---------------------\n' +
+        'broccoli-persistent-filter:TemplateCom... (1) | 250ms               \n' +
+        '...pilerConcat                                |                     \n'
+    ])
   });
 });
