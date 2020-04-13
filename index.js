@@ -18,7 +18,7 @@ module.exports = function printSlowNodes(tree, factor, log) {
 
 
     var MAX_TABLE_LENGTH = process.stdout.columns || 100;
-    // the name column is 8/10th the size of the value celll
+    // the name column is 8/10th the size of the value cell
     var MAX_NAME_CELL_LENGTH = Math.floor(MAX_TABLE_LENGTH / 2);
     // the name column is 2/10th the size of the value celll
     var MAX_VALUE_CELL_LENGTH = Math.floor(MAX_TABLE_LENGTH / 8);
