@@ -9,7 +9,7 @@ function ellipsize(string, desiredLength) {
 }
 
 function getLargestString(strings) {
-  return Math.max(...(strings.map(string => string.length)));
+  return Math.max.apply(Math, strings.map(function(string) { return string.length; }));
 }
 
 module.exports = function printSlowNodes(tree, factor, log) {
